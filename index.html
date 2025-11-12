@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Viral Alert</title>
+    <meta name="description" content="Experience 'Viral Alert,' an interactive 3D WebGL visualization. Tweak a dynamic, virus-like structure in real-time with adjustable parameters.">
+    <meta name="keywords" content="Viral Alert, 3D, WebGL, Three.js, interactive art, digital art, simulation, real-time rendering, generative art">
+    <meta name="author" content="Chris Pirillo">
+    <link rel="canonical" href="https://pirillo.com/arcade/viral-alert.html">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pirillo.com/arcade/viral-alert.html">
+    <meta property="og:title" content="Viral Alert - Interactive 3D WebGL Art">
+    <meta property="og:description" content="An interactive 3D WebGL visualization. Manipulate a dynamic, virus-like structure in real-time.">
+    <meta property="og:image" content="https://pirillo.com/arcade/images/viral-alert.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Pirillo's Arcade">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://pirillo.com/arcade/viral-alert.html">
+    <meta name="twitter:title" content="Viral Alert - Interactive 3D WebGL Art">
+    <meta name="twitter:description" content="An interactive 3D WebGL visualization. Manipulate a dynamic, virus-like structure in real-time.">
+    <meta name="twitter:image" content="https://pirillo.com/arcade/images/viral-alert.png">
+    <meta name="twitter:creator" content="@ChrisPirillo">
+    <meta name="twitter:site" content="@ChrisPirillo">
+
+    <!-- 
+      Step 1 & 3: Viewport & Core Web Vitals
+      - Standard viewport tag is essential for mobile devices and CLS.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- 
+      Step 2 & 3: Performance & Font Optimization (CWV)
+      - Preconnect to critical third-party origins to speed up DNS/TCP/SSL.
+      - Preload the Inter font stylesheet and Tailwind CSS script as they are critical.
+      - Load 'Inter' font with 'font-display: swap' to prevent render-blocking text (FOT).
+    -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+    
+    <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <!-- Fallback for no-JS (though this app requires JS) -->
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
+
+    <!-- 
+      Critical Scripts
+      - Tailwind is loaded synchronously as requested, as it's required for initial layout 
+        and deferring it would cause a visible FOUC/layout shift (CLS).
+      - Google Analytics script added as requested, with 'async' to prevent blocking.
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google tag (gtag.js) as requested -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1CQ4D3VQ3L"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-1CQ4D3VQ3L');
+    </script>
+
+    <!-- 
+      Step 1: JSON-LD Structured Data
+      - Describes the page as a WebApplication for richer search results.
+    -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Viral Alert",
+      "description": "An interactive 3D WebGL visualization that allows users to manipulate a dynamic, virus-like structure in real-time.",
+      "applicationCategory": "Game",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires a modern browser with WebGL support.",
+      "url": "https://pirillo.com/arcade/viral-alert.html",
+      "author": {
+        "@type": "Person",
+        "name": "Chris Pirillo",
+        "url": "https://pirillo.com"
+      },
+      "image": "https://pirillo.com/arcade/images/viral-alert.png",
+      "screenshot": "https://pirillo.com/arcade/images/viral-alert.png",
+      "offers": {
+        "@type": "Offer",
+        "price": "0"
+      }
+    }
+    </script>
+
+    <!-- 
+      Step 2 & 3: Critical CSS
+      - Existing inline styles are critical for the initial layout and menu,
+        preventing CLS. This is kept as-is.
+    -->
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #111;
+            /* Font stack updated to use 'Inter' first */
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+        canvas {
+            display: block;
+        }
+        #menu {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+        }
+        #menu.open {
+            transform: translateX(0);
+        }
+        .slider-container {
+            margin-bottom: 1rem;
+        }
+        .slider-container label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+            font-size: 0.875rem;
+        }
+        .slider-container .value-display {
+            color: #fff;
+            font-weight: 500;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #4a5568;
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #a0aec0;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #a0aec0;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .fade-out {
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 5%);
+        }
+    </style>
+</head>
+<body>
+    <!-- 
+      Step 1: Semantic HTML
+      - Replaced generic <div> with <main> for the primary content area.
+      - Kept original ID for JS compatibility.
+    -->
+    <main id="container"></main>
+
+    <!-- 
+      Step 1: Semantic HTML
+      - Replaced <div> with <nav> for the menu header/toggle.
+      - Kept original ID and classes for CSS/JS compatibility.
+      - Added <title> to SVG for accessibility.
+    -->
+    <nav id="menu-header" class="fixed top-4 left-4 z-30 flex items-center gap-4">
+        <button id="menu-toggle" class="p-2 rounded-md bg-gray-800 bg-opacity-50 text-white hover:bg-opacity-75 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" role="img" aria-labelledby="menuTitle">
+                <title id="menuTitle">Toggle Menu</title>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+        <h2 id="menu-title" class="text-xl font-bold text-white hidden pointer-events-none">Viral Alert</h2>
+    </nav>
+
+
+    <!-- 
+      Step 1: Semantic HTML
+      - Replaced <div> with <aside> for the sidebar controls.
+      - Kept original ID and classes for CSS/JS compatibility.
+    -->
+    <aside id="menu" class="fixed top-0 left-0 h-full w-80 bg-gray-900 bg-opacity-90 backdrop-blur-sm p-6 z-20">
+        <div class="fade-out overflow-y-auto h-full">
+            <div class="h-16"></div> <!-- Spacer to push content below the fixed header -->
+            <!-- Rotation Speed Slider -->
+            <div class="slider-container">
+                <label for="rotationSpeed">Rotation Speed: <span id="rotationSpeed-value" class="value-display">1.0</span></label>
+                <input type="range" id="rotationSpeed" min="-2" max="2" step="0.1" value="1.0">
+            </div>
+            
+            <!-- Morph Intensity Slider -->
+            <div class="slider-container">
+                <label for="morphIntensity">Morph Intensity: <span id="morphIntensity-value" class="value-display">0.0</span></label>
+                <input type="range" id="morphIntensity" min="0" max="0.5" step="0.01" value="0.0">
+            </div>
+
+            <!-- Twist Slider -->
+            <div class="slider-container">
+                <label for="twist">Twist: <span id="twist-value" class="value-display">0.0</span></label>
+                <input type="range" id="twist" min="-2" max="2" step="0.1" value="0.0">
+            </div>
+
+            <!-- Subdivisions Slider -->
+            <div class="slider-container">
+                <label for="subdivisions">Subdivisions: <span id="subdivisions-value" class="value-display">1</span></label>
+                <input type="range" id="subdivisions" min="0" max="2" step="1" value="1">
+            </div>
+
+            <!-- Thickness Slider -->
+            <div class="slider-container">
+                <label for="thickness">Thickness: <span id="thickness-value" class="value-display">0.03</span></label>
+                <input type="range" id="thickness" min="0.001" max="0.2" step="0.001" value="0.03">
+            </div>
+
+            <!-- Roundness Slider -->
+            <div class="slider-container">
+                <label for="roundness">Roundness: <span id="roundness-value" class="value-display">0.015</span></label>
+                <input type="range" id="roundness" min="0.001" max="0.1" step="0.001" value="0.015">
+            </div>
+            
+            <!-- Spike Height Slider -->
+            <div class="slider-container">
+                <label for="spikeHeight">Spike Height: <span id="spikeHeight-value" class="value-display">1.0</span></label>
+                <input type="range" id="spikeHeight" min="0.1" max="3.0" step="0.01" value="1.0">
+            </div>
+            
+            <!-- Spike Width Slider -->
+            <div class="slider-container">
+                <label for="spikeWidth">Spike Width: <span id="spikeWidth-value" class="value-display">0.05</span></label>
+                <input type="range" id="spikeWidth" min="0.01" max="0.2" step="0.005" value="0.05">
+            </div>
+
+            <!-- Camera Zoom Slider -->
+            <div class="slider-container">
+                <label for="zoom">Camera Zoom: <span id="zoom-value" class="value-display">4.0</span></label>
+                <input type="range" id="zoom" min="1" max="10" step="0.1" value="4.0">
+            </div>
+            
+            <!-- Field of View Slider -->
+            <div class="slider-container">
+                <label for="fov">Field of View (Lens): <span id="fov-value" class="value-display">2.0</span></label>
+                <input type="range" id="fov" min="0.5" max="5" step="0.1" value="2.0">
+            </div>
+
+            <!-- AO Strength Slider -->
+            <div class="slider-container">
+                <label for="aoStrength">AO Strength: <span id="aoStrength-value" class="value-display">3.0</span></label>
+                <input type="range" id="aoStrength" min="0" max="10" step="0.1" value="3.0">
+            </div>
+
+            <!-- Fresnel Power Slider -->
+            <div class="slider-container">
+                <label for="fresnelPower">Fresnel Power: <span id="fresnelPower-value" class="value-display">2.0</span></label>
+                <input type="range" id="fresnelPower" min="0.1" max="10" step="0.1" value="2.0">
+            </div>
+
+            <!-- Color Sliders -->
+            <div class="slider-container">
+                <label>Object Color</label>
+                <div class="pl-2">
+                    <label for="colorR">Red: <span id="colorR-value" class="value-display">0.5</span></label>
+                    <input type="range" id="colorR" min="0" max="1" step="0.01" value="0.5">
+                    <label for="colorG">Green: <span id="colorG-value" class="value-display">0.5</span></label>
+                    <input type="range" id="colorG" min="0" max="1" step="0.01" value="0.5">
+                    <label for="colorB">Blue: <span id="colorB-value" class="value-display">0.5</span></label>
+                    <input type="range" id="colorB" min="0" max="1" step="0.01" value="0.5">
+                </div>
+            </div>
+
+            <!-- Light Direction Sliders -->
+            <div class="slider-container">
+                <label>Light Direction</label>
+                <div class="pl-2">
+                    <label for="lightX">X: <span id="lightX-value" class="value-display">-0.6</span></label>
+                    <input type="range" id="lightX" min="-1" max="1" step="0.01" value="-0.6">
+                    <label for="lightY">Y: <span id="lightY-value" class="value-display">0.7</span></label>
+                    <input type="range" id="lightY" min="-1" max="1" step="0.01" value="0.7">
+                    <label for="lightZ">Z: <span id="lightZ-value" class="value-display">0.5</span></label>
+                    <input type="range" id="lightZ" min="-1" max="1" step="0.01" value="0.5">
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 
+      MAIN JAVASCRIPT & SHADERS
+      - Untouched as per your explicit instructions.
+      - Import map, module script, and shader scripts are
+        left completely as-is to ensure functionality.
+    -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        let scene, camera, renderer, material, mesh;
+        let uniforms;
+
+        function init() {
+            // Scene setup
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            // Shader uniforms
+            uniforms = {
+                u_time: { value: 0.0 },
+                u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+                u_mouse: { value: new THREE.Vector2() },
+                u_type: { value: 5.0 }, // Kept for shader compatibility, but not user-changeable
+                u_subdivisions: { value: 1 },
+                u_thickness: { value: 0.03 },
+                u_roundness: { value: 0.015 },
+                u_spikeHeight: { value: 1.0 },
+                u_spikeWidth: { value: 0.05 },
+                u_lightDir: { value: new THREE.Vector3(-0.6, 0.7, 0.5) },
+                u_rotationSpeed: { value: 1.0 },
+                u_morphIntensity: { value: 0.0 },
+                u_twist: { value: 0.0 },
+                u_zoom: { value: 4.0 },
+                u_fov: { value: 2.0 },
+                u_aoStrength: { value: 3.0 },
+                u_fresnelPower: { value: 2.0 },
+                u_objectColor: { value: new THREE.Vector3(0.5, 0.5, 0.5) }
+            };
+
+            // Geometry and Material
+            const geometry = new THREE.PlaneGeometry(2, 2);
+            material = new THREE.ShaderMaterial({
+                uniforms: uniforms,
+                vertexShader: document.getElementById('vertexShader').textContent,
+                fragmentShader: document.getElementById('fragmentShader').textContent
+            });
+
+            mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+            
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener('mousemove', onMouseMove, false);
+            setupUI();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
+        }
+
+        function onMouseMove(event) {
+            uniforms.u_mouse.value.set(event.clientX, window.innerHeight - event.clientY);
+        }
+
+        function setupUI() {
+            const menuToggle = document.getElementById('menu-toggle');
+            const menu = document.getElementById('menu');
+            const menuTitle = document.getElementById('menu-title');
+            
+            menuToggle.addEventListener('click', () => {
+                menu.classList.toggle('open');
+                menuTitle.classList.toggle('hidden');
+            });
+
+            const sliders = [
+                { id: 'rotationSpeed', uniform: 'u_rotationSpeed', type: 'float', precision: 1 },
+                { id: 'morphIntensity', uniform: 'u_morphIntensity', type: 'float', precision: 2 },
+                { id: 'twist', uniform: 'u_twist', type: 'float', precision: 1 },
+                { id: 'subdivisions', uniform: 'u_subdivisions', type: 'int', precision: 0 },
+                { id: 'thickness', uniform: 'u_thickness', type: 'float', precision: 3 },
+                { id: 'roundness', uniform: 'u_roundness', type: 'float', precision: 3 },
+                { id: 'spikeHeight', uniform: 'u_spikeHeight', type: 'float', precision: 2 },
+                { id: 'spikeWidth', uniform: 'u_spikeWidth', type: 'float', precision: 3 },
+                { id: 'zoom', uniform: 'u_zoom', type: 'float', precision: 1 },
+                { id: 'fov', uniform: 'u_fov', type: 'float', precision: 1 },
+                { id: 'aoStrength', uniform: 'u_aoStrength', type: 'float', precision: 1 },
+                { id: 'fresnelPower', uniform: 'u_fresnelPower', type: 'float', precision: 1 },
+                { id: 'lightX', uniform: 'u_lightDir', component: 'x', type: 'float', precision: 2 },
+                { id: 'lightY', uniform: 'u_lightDir', component: 'y', type: 'float', precision: 2 },
+                { id: 'lightZ', uniform: 'u_lightDir', component: 'z', type: 'float', precision: 2 },
+                { id: 'colorR', uniform: 'u_objectColor', component: 'x', type: 'float', precision: 2 },
+                { id: 'colorG', uniform: 'u_objectColor', component: 'y', type: 'float', precision: 2 },
+                { id: 'colorB', uniform: 'u_objectColor', component: 'z', type: 'float', precision: 2 }
+            ];
+
+            sliders.forEach(sliderConfig => {
+                const slider = document.getElementById(sliderConfig.id);
+                const valueDisplay = document.getElementById(`${sliderConfig.id}-value`);
+
+                slider.addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    if (sliderConfig.component) {
+                        uniforms[sliderConfig.uniform].value[sliderConfig.component] = value;
+                    } else {
+                        uniforms[sliderConfig.uniform].value = sliderConfig.type === 'int' ? Math.floor(value) : value;
+                    }
+                    if (valueDisplay) {
+                        valueDisplay.textContent = value.toFixed(sliderConfig.precision);
+                    }
+                });
+            });
+        }
+        
+        function animate(time) {
+            requestAnimationFrame(animate);
+            uniforms.u_time.value = time * 0.001; // Keep a separate time for animation speed
+            renderer.render(scene, camera);
+        }
+
+        init();
+        animate(0);
+    </script>
+    
+    <script id="vertexShader" type="x-shader/x-vertex">
+      void main() {
+        gl_Position = vec4(position, 1.0);
+      }
+    </script>
+    
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        // Uniforms passed from JavaScript
+        uniform vec2 u_resolution;
+        uniform float u_time;
+        uniform vec2 u_mouse;
+        uniform float u_type;
+        uniform int u_subdivisions;
+        uniform float u_thickness;
+        uniform float u_roundness;
+        uniform float u_spikeHeight;
+        uniform float u_spikeWidth;
+        uniform vec3 u_lightDir;
+        uniform float u_rotationSpeed;
+        uniform float u_morphIntensity;
+        uniform float u_twist;
+        uniform float u_zoom;
+        uniform float u_fov;
+        uniform float u_aoStrength;
+        uniform float u_fresnelPower;
+        uniform vec3 u_objectColor;
+
+        // The original shader code starts here
+        #define PI 3.14159265359
+
+        float t;
+
+        #define saturate(x) clamp(x, 0., 1.)
+
+        float vmax(vec3 v) {
+            return max(max(v.x, v.y), v.z);
+        }
+
+        void pTwist(inout vec3 p, float amount) {
+            float c = cos(amount * p.y);
+            float s = sin(amount * p.y);
+            mat2 m = mat2(c, -s, s, c);
+            p.xz = m * p.xz;
+        }
+
+        float fPlane(vec3 p, vec3 n, float distanceFromOrigin) {
+            return dot(p, n) + distanceFromOrigin;
+        }
+
+        float fPlane(vec3 p, vec3 a, vec3 b, vec3 c, vec3 inside, float distanceFromOrigin) {
+            vec3 n = normalize(cross(c - b, a - b));
+            float d = -dot(a, n);
+            
+            if (dot(n, inside) + d > 0.) {
+                n = -n;
+                d = -d;
+            }
+
+            return fPlane(p, n, d + distanceFromOrigin);
+        }
+
+        float fOpIntersectionRound(float a, float b, float r) {
+            float m = max(a, b);
+            if ((-a < r) && (-b < r)) {
+                return max(m, -(r - sqrt((r+a)*(r+a) + (r+b)*(r+b))));
+            } else {
+                return m;
+            }
+        }
+
+        float fCone(vec3 p, float radius, float height) {
+            vec2 q = vec2(length(p.xz), p.y);
+            vec2 tip = q - vec2(0, height);
+            vec2 mantleDir = normalize(vec2(height, radius));
+            float mantle = dot(tip, mantleDir);
+            float d = max(mantle, -q.y);
+            float projected = dot(tip, vec2(mantleDir.y, -mantleDir.x));
+            
+            if ((q.y > height) && (projected < 0.)) {
+                d = max(d, length(tip));
+            }
+            
+            if ((q.x > radius) && (projected > length(vec2(height, radius)))) {
+                d = max(d, length(q - vec2(radius, 0)));
+            }
+            return d;
+        }
+
+        void pR(inout vec2 p, float a) {
+            p = cos(a)*p + sin(a)*vec2(p.y, -p.x);
+        }
+
+        float pReflect(inout vec3 p, vec3 planeNormal, float offset) {
+            float t = dot(p, planeNormal)+offset;
+            if (t < 0.) {
+                p = p - (2.*t)*planeNormal;
+            }
+            return sign(t);
+        }
+
+        float fOpUnionRound(float a, float b, float r) {
+            float m = min(a, b);
+            if ((a < r) && (b < r) ) {
+                return min(m, r - sqrt((r-a)*(r-a) + (r-b)*(r-b)));
+            } else {
+            return m;
+            }
+        }
+
+        vec3 bToC(vec3 A, vec3 B, vec3 C, vec3 barycentric) {
+            return barycentric.x * A + barycentric.y * B + barycentric.z * C;
+        }
+
+        int Type;
+
+        vec3 nc,pab,pbc,pca;
+        vec3 icoF0;
+        vec3 icoF1a;
+        vec3 icoA0;
+        vec3 icoB0;
+        vec3 icoC0;
+        vec3 icoA1;
+        vec3 icoB1;
+        vec3 icoC1;
+        vec3 fold1;
+        vec3 fold2;
+        vec3 fold3;
+        void initIcosahedron() {
+            Type = int(u_type);
+            float cospin=cos(PI/float(Type)), scospin=sqrt(0.75-cospin*cospin);
+            nc=vec3(-0.5,-cospin,scospin);
+            pab=vec3(0.,0.,1.);
+            pbc=vec3(scospin,0.,0.5);
+            pca=vec3(0.,scospin,cospin);
+            pbc=normalize(pbc);	pca=normalize(pca);
+
+            vec3 A = pbc;
+            vec3 C = reflect(A, normalize(cross(pab, pca)));
+            vec3 B = reflect(C, normalize(cross(pbc, pca)));
+            
+            icoF0 = pca;
+            
+            icoA0 = A;
+            icoC0 = B;
+            icoB0 = C;
+
+            vec3 p1 = bToC(A, B, C, vec3(.5, .0, .5));
+            vec3 p2 = bToC(A, B, C, vec3(.5, .5, .0));
+            fold1 = normalize(cross(p1, p2));
+            
+            vec3 A2 = reflect(A, fold1);
+            vec3 B2 = p1;
+            vec3 C2 = p2;
+            
+            icoF1a = pca;
+            
+            icoA1 = A2;
+            icoB1 = normalize(B2);
+            icoC1 = normalize(C2);
+            
+            p1 = bToC(A2, B2, C2, vec3(.5, .0, .5));
+            p2 = bToC(A2, B2, C2, vec3(.5, .5, .0));
+            fold2 = normalize(cross(p1, p2));
+            
+            p1 = bToC(A2, B2, C2, vec3(.0, .5, .5));
+            fold3 = normalize(cross(p2, p1));
+        }
+
+
+
+        float pModIcosahedron(inout vec3 p, int subdivisions) {
+            p = abs(p);
+            pReflect(p, nc, 0.);
+            p.xy = abs(p.xy);
+            pReflect(p, nc, 0.);
+            p.xy = abs(p.xy);
+            pReflect(p, nc, 0.);
+            
+            float i = 0.;
+            
+            if (subdivisions > 0) {
+                i += pReflect(p, fold1, 0.) / 2. + .5;
+                if (subdivisions > 1) {
+                    pReflect(p, fold2, 0.);
+                    pReflect(p, fold3, 0.);
+                }
+            }
+
+            return i;
+        }
+
+        mat3 rotationMatrix(vec3 axis, float angle)
+        {
+            axis = normalize(axis);
+            float s = sin(angle);
+            float c = cos(angle);
+            float oc = 1.0 - c;
+            
+            return mat3(
+                oc * axis.x * axis.x + c,          oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,
+                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,
+                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c
+            );
+        }
+
+        vec3 pRoll(inout vec3 p) {
+            pR(p.yx, PI/3.);
+            pR(p.yz, PI/-5.);
+            mat3 m = rotationMatrix(normalize(icoF1a), t * ((PI*2.)/3.));
+            p *= m;
+            return p;
+        }
+
+        float fCone(vec3 p, float radius, float height, vec3 direction) {
+            p = reflect(p, normalize(mix(vec3(0,1,0), -direction, .5)));
+            return fCone(p, radius, height);
+        }
+
+
+        float fHolePart(
+            vec3 p, vec3 a, vec3 b, vec3 c, vec3 d, float round, float thick
+        ) {
+            vec3 center = (a + b + c + d) / 4.;
+            float f0 = fPlane(p, a, b, c, center, thick);
+            float f1 = fPlane(p, a, c, d, center, thick);
+            float f = f0;
+            f = fOpIntersectionRound(f, f1, round);
+            return f;
+        }
+            
+        float fHole(vec3 p, vec3 a, vec3 b, vec3 c) {
+            float w = 1.;
+            float h = 1.;
+            float round = .08;
+            float thick = u_thickness;
+
+            float d = 1000.;
+
+            vec3 AB = mix(a, b, 0.5);
+            vec3 AAB = mix(a, b, w);
+            vec3 ABB = mix(a, b, 1. - w);
+            vec3 n = normalize(cross(a, b));
+            vec3 cn = dot(c, n) * n;
+            vec3 AF = c - cn * (1. - h);
+            vec3 AF2 = reflect(AF, n);
+
+            float part1 = fHolePart(p, vec3(0), AF2, AAB, AF, round, thick);
+            float part2 = fHolePart(p, vec3(0), AF2, ABB, AF, round, thick);
+            float hole = fOpIntersectionRound(part1, part2, round);
+            return hole;
+        }
+
+        float holes(vec3 p, float i) {
+            float d = 1000.;
+            if (i > 0.) {	
+                return min(d, fHole(p, icoC1, icoB1, icoF1a));
+            }
+            d = min(d, fHole(p, icoC1, icoB1, icoF1a));
+            d = min(d, fHole(p, icoA1, icoB1, icoF1a));
+            return d;
+        }
+
+
+        float spikes(vec3 p) {
+            float d = 1000.;
+            d = min(d, fCone(p, u_spikeWidth, 1.3 * u_spikeHeight, icoF1a));
+            d = min(d, fCone(p, u_spikeWidth, 1.7 * u_spikeHeight, icoA1));
+            d = min(d, fCone(p, u_spikeWidth, 1.8 * u_spikeHeight, icoB1));
+            return d;
+        }
+
+        float shell(vec3 p, float i) {
+            float thick = u_thickness;
+            float round = u_roundness;
+
+            float morph = sin(u_time * 2.0) * u_morphIntensity;
+            float d = length(p) - (1.0 + morph);
+
+            d = fOpUnionRound(d, spikes(p), .12);
+            d = max(d, -(length(p) - (1.0 - thick + morph)));
+            float h = holes(p, i);
+            h = max(h, (length(p) - 1.1));
+            d = fOpIntersectionRound(d, -h, round);
+            return d;
+        }
+
+        float model(vec3 p) {
+            pRoll(p);
+            pTwist(p, u_twist);
+
+            float d = 1000.;
+            float i = 0.;
+        
+            i = pModIcosahedron(p, u_subdivisions);
+            d = min(d, shell(p, i));	
+            return d;
+        }
+
+        const float MAX_TRACE_DISTANCE = 10.0;
+        const float INTERSECTION_PRECISION = 0.001;
+        const int NUM_OF_TRACE_STEPS = 100;
+
+        vec2 map( vec3 p ){	
+            vec2 res = vec2(model(p) ,1.);	
+            return res;
+        }
+
+        float softshadow( in vec3 ro, in vec3 rd, in float mint, in float tmax ) {
+            float res = 1.0;
+            float t = mint;
+            for( int i=0; i<16; i++ ) {
+                float h = map( ro + rd*t ).x;
+                res = min( res, 8.0*h/t );
+                t += clamp( h, 0.02, 0.10 );
+                if( h<0.001 || t>tmax ) break;
+            }
+            return clamp( res, 0.0, 1.0 );
+        }
+
+
+        float calcAO( in vec3 pos, in vec3 nor ) {
+            float occ = 0.0;
+            float sca = 1.0;
+            for( int i=0; i<5; i++ ) {
+                float hr = 0.01 + 0.12*float(i)/4.0;
+                vec3 aopos =  nor * hr + pos;
+                float dd = map( aopos ).x;
+                occ += -(dd-hr)*sca;
+                sca *= 0.95;
+            }
+            return clamp( 1.0 - u_aoStrength*occ, 0.0, 1.0 );	 	
+        }
+
+        const float GAMMA = 2.2;
+
+        vec3 gamma(vec3 color, float g) {
+            return pow(color, vec3(g));
+        }
+
+        vec3 linearToScreen(vec3 linearRGB) {
+            return gamma(linearRGB, 1.0 / GAMMA);
+        }
+
+        vec3 doLighting(vec3 col, vec3 pos, vec3 nor, vec3 ref, vec3 rd) {
+            float occ = calcAO( pos, nor );
+            vec3  lig = normalize( u_lightDir );
+            float amb = clamp( 0.5+0.5*nor.y, 0.0, 1.0 );
+            float dif = clamp( dot( nor, lig ), 0.0, 1.0 );
+            float bac = clamp( dot( nor, normalize(vec3(-lig.x,0.0,-lig.z))), 0.0, 1.0 )*clamp( 1.0-pos.y,0.0,1.0);
+            float fre = pow( clamp(1.0+dot(nor,rd),0.0,1.0), u_fresnelPower );
+            
+            dif *= softshadow( pos, lig, 0.02, 2.5 );
+
+            vec3 lin = vec3(0.0);
+            lin += 1.20*dif*vec3(.95,0.80,0.60);
+            lin += 0.80*amb*vec3(0.50,0.70,.80)*occ;
+            lin += 0.30*bac*vec3(0.25,0.25,0.25)*occ;
+            lin += 0.20*fre*vec3(1.00,1.00,1.00)*occ;
+            col = col*lin;
+
+            return col;
+        }
+
+        vec2 calcIntersection( in vec3 ro, in vec3 rd ){
+            float h =  INTERSECTION_PRECISION*2.0;
+            float t = 0.0;
+            float res = -1.0;
+            float id = -1.;
+            
+            for( int i=0; i< NUM_OF_TRACE_STEPS ; i++ ){
+                if( h < INTERSECTION_PRECISION || t > MAX_TRACE_DISTANCE ) break;
+                vec2 m = map( ro+rd*t );
+                h = m.x;
+                t += h;
+                id = m.y;
+            }
+
+            if( t < MAX_TRACE_DISTANCE ) res = t;
+            if( t > MAX_TRACE_DISTANCE ) id =-1.0;
+            
+            return vec2( res , id );
+        }
+
+        mat3 calcLookAtMatrix( in vec3 ro, in vec3 ta, in float roll ) {
+            vec3 ww = normalize( ta - ro );
+            vec3 uu = normalize( cross(ww,vec3(sin(roll),cos(roll),0.0) ) );
+            vec3 vv = normalize( cross(uu,ww));
+            return mat3( uu, vv, ww );
+        }
+
+        void doCamera(out vec3 camPos, out vec3 camTar, in float time, in vec2 mouse) {
+            vec3 orient = normalize(vec3(.1, 1, 0.));
+            float zoom = u_zoom;
+            zoom -= (mouse.y / u_resolution.y) * 3.5;
+            camPos = zoom * orient;
+            camTar = vec3(0);
+        }
+
+        vec3 calcNormal( in vec3 pos ){
+            vec3 eps = vec3( 0.001, 0.0, 0.0 );
+            vec3 nor = vec3(
+                map(pos+eps.xyy).x - map(pos-eps.xyy).x,
+                map(pos+eps.yxy).x - map(pos-eps.yxy).x,
+                map(pos+eps.yyx).x - map(pos-eps.yxy).x );
+            return normalize(nor);
+        }
+
+
+        vec3 render( vec2 res , vec3 ro , vec3 rd ){
+            vec3 color = vec3(.04,.045,.05);
+            
+            if( res.y > -.5 ){
+                vec3 pos = ro + rd * res.x;
+                vec3 norm = calcNormal( pos );
+                vec3 ref = reflect(rd, norm);
+                
+                color = u_objectColor;	
+                color = doLighting(color, pos, norm, ref, rd);
+            }
+            
+            return color;
+        }
+
+
+        void main() {
+            t = u_time * u_rotationSpeed;
+            t = mod(t/4., 1.);	
+
+            initIcosahedron();
+            
+            vec2 p = (-u_resolution.xy + 2.0*gl_FragCoord.xy)/u_resolution.y;
+            vec2 m = u_mouse.xy / u_resolution.xy;
+
+            vec3 ro = vec3( 0., 0., 2.);
+            vec3 ta = vec3( 0. , 0. , 0. );
+            
+            doCamera(ro, ta, u_time, m);
+            
+            mat3 camMat = calcLookAtMatrix( ro, ta, 0.0 );
+            
+            vec3 rd = normalize( camMat * vec3(p.xy, u_fov) );
+            
+            vec2 res = calcIntersection( ro , rd	 );
+            
+            vec3 color = render( res , ro , rd );
+            color = linearToScreen(color);
+            
+            gl_FragColor = vec4(color,1.0);
+        }
+    </script>
+</body>
+</html>
